@@ -26,11 +26,16 @@ static void decomposeAddress(uint64_t virtualAddress,
 }
 
 // Calculate cyclic distance between two page numbers
-static uint64_t cyclicDistance(uint64_t a, uint64_t b)
+// Calculate a weighted cyclic distance between two page numbers.
+// The weight is determined by the parity of the compared page (b).
+static uint64_t weightedCyclicDistance(uint64_t a, uint64_t b)
 {
     uint64_t diff = a > b ? a - b : b - a;
     uint64_t alt = NUM_PAGES - diff;
-    return std::min(diff, alt);
+    uint64_t baseDist = std::min(diff, alt);
+
+    uint64_t weight = (b % 2 == 0) ? WEIGHT_EVEN : WEIGHT_ODD;
+    return baseDist * weight;
 }
 
 struct TraversalResult
@@ -46,7 +51,7 @@ struct TraversalResult
     uint64_t evictParent = 0;
     uint64_t evictIndex = 0;
     uint64_t evictPage = 0;
-    uint64_t bestDist = 0;
+    uint64_t bestScore = 0;
 };
 
 // Depth-first traversal used for locating frames for allocation
@@ -60,10 +65,10 @@ static void traverse(uint64_t frame, int depth, uint64_t pagePrefix,
     {
         if (!forbidden[frame])
         {
-            uint64_t dist = cyclicDistance(targetPage, pagePrefix);
-            if (dist > res.bestDist)
+            uint64_t dist = weightedCyclicDistance(targetPage, pagePrefix);
+            if (dist > res.bestScore)
             {
-                res.bestDist = dist;
+                res.bestScore = dist;
                 res.evictFrame = frame;
                 res.evictParent = parent;
                 res.evictIndex = parentIdx;
