@@ -29,6 +29,33 @@ make
 ./run_tests.sh
 ```
 
+## Virtual Memory Implementation
+
+`Resources/VirtualMemory.cpp` provides the implementation of a simple
+hierarchical page table. The following functions are key to understanding how
+virtual addresses are mapped to physical frames:
+
+- **`decomposeAddress`** – breaks a virtual address into indices for each table
+  level and the page offset.
+- **`clearFrame`** – fills a frame with zeros before it is reused.
+- **`weightedCyclicDistance`** – computes a weighted distance between pages. Even
+  pages use `WEIGHT_EVEN` while odd pages use `WEIGHT_ODD` from
+  `MemoryConstants.h`.
+- **`traverse`** – performs a depth‑first search of the page tables, recording
+  empty frames and the best page to evict if none are free.
+- **`allocateFrame`** – chooses a frame for a new table or page by searching for
+  empty tables, unused frames or by evicting the page with the largest weighted
+  cyclic distance.
+- **`getFrame`** – walks the page‑table hierarchy, allocating frames and
+  restoring pages when necessary, and returns the frame index associated with a
+  virtual page.
+- **Public API** – `VMinitialize` zeros the root frame, and `VMread`/`VMwrite`
+  translate addresses using `getFrame` before reading or writing with the
+  physical memory interface.
+
+These helpers encapsulate the logic needed to locate frames, perform page
+eviction and maintain the table structure.
+
 ## Contribution
 
 This repository is intended for coursework. If you find issues or have suggestions, feel free to open an issue or submit a pull request (if permitted by course policy).
