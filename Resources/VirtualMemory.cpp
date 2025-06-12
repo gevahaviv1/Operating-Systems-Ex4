@@ -161,6 +161,11 @@ void VMinitialize()
 
 int VMread(uint64_t virtualAddress, word_t* value)
 {
+    // Validate the output pointer before accessing it
+    if (value == nullptr)
+    {
+        return 0;
+    }
     if (virtualAddress >= VIRTUAL_MEMORY_SIZE)
     {
         return 0;
