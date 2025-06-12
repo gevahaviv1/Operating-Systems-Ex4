@@ -2,7 +2,10 @@
 #include "PhysicalMemory.h"
 #include <algorithm>
 
-// Helper to clear a frame by writing zero to all words
+// Helper to clear a frame by writing zero to all words. This routine is used
+// when allocating a **table frame**, meaning a frame that holds page table
+// entries. A **page frame** that stores page data is restored from disk and
+// therefore should not be cleared beforehand.
 static void clearFrame(uint64_t frame)
 {
     for (uint64_t i = 0; i < PAGE_SIZE; ++i)
@@ -132,6 +135,10 @@ static uint64_t allocateFrame(uint64_t targetPage,
     return res.evictFrame;
 }
 
+// Walks down the page tables to locate or allocate the frame that should store
+// the requested page. Frames used for intermediate levels are *table frames*
+// and must be cleared before use, while the final level corresponds to a *page
+// frame* that is restored from disk when allocated.
 static uint64_t getFrame(uint64_t pageNumber,
                          const uint64_t indices[TABLES_DEPTH],
                          uint64_t path[TABLES_DEPTH + 1])
@@ -145,9 +152,14 @@ static uint64_t getFrame(uint64_t pageNumber,
         if (val == 0)
         {
             uint64_t newFrame = allocateFrame(pageNumber, path, depth + 1);
-            clearFrame(newFrame);
-            if (depth == TABLES_DEPTH - 1)
+            if (depth < TABLES_DEPTH - 1)
             {
+                // newFrame is used as a table, so clear it
+                clearFrame(newFrame);
+            }
+            else
+            {
+                // newFrame holds page data - restore from disk without clearing
                 PMrestore(newFrame, pageNumber);
             }
             PMwrite(frame * PAGE_SIZE + indices[depth], newFrame);
