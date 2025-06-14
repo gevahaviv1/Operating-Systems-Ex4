@@ -1,35 +1,38 @@
 CC=g++
 CXX=g++
-RANLIB=ranlib
-AR=ar
-ARFLAGS=rcs
 
-LIBSRC=Resources/VirtualMemory.cpp Resources/PhysicalMemory.cpp
-LIBOBJ=$(LIBSRC:.cpp=.o)
+CXXVERSION=-std=c++20
 
-INCS=-IResources
-CFLAGS=-Wall -std=c++11 -g $(INCS)
-CXXFLAGS=$(CFLAGS)
+CODESRC= VirtualMemory.cpp
+OBJ= VirtualMemory.o
+EXESRC= $(CODESRC)
+EXEOBJ= libVirtualMemory.a
 
-VMLIB=libVirtualMemory.a
-TARGETS=$(VMLIB)
+INCS=-I.
+CFLAGS = $(CXXVERSION) -O3 -Wall $(INCS)
+CXXFLAGS = $(CXXVERSION) -O3 -Wall $(INCS)
+
+TARGETS = $(EXEOBJ)
 
 TAR=tar
 TARFLAGS=-cvf
 TARNAME=ex4.tar
-TARSRCS=$(LIBSRC) Makefile README.md
+TARSRCS=$(CODESRC) Makefile README
 
 all: $(TARGETS)
 
-$(TARGETS): $(LIBOBJ)
-	$(AR) $(ARFLAGS) $@ $^
-	$(RANLIB) $@
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+	
+$(EXEOBJ): $(EXESRC:.cpp=.o)
+	ar rcs $@ $^
+	$(RM) $^
 
 clean:
-	$(RM) $(TARGETS) $(LIBOBJ) *~ *core
+	$(RM) $(TARGETS) $(EXESRC:.cpp=.o)
 
 depend:
-	makedepend -- $(CFLAGS) -- $(LIBSRC)
+	makedepend -- $(CFLAGS) -- $(CODESRC)
 
 tar:
 	$(TAR) $(TARFLAGS) $(TARNAME) $(TARSRCS)
